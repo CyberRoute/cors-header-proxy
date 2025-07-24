@@ -6,9 +6,9 @@ export default {
       "Access-Control-Max-Age": "86400",
     };
 
-    // Using APIs that DON'T support CORS for testing
+    // Using APIs with different CORS policies for testing
     const API_URL = "https://httpbin.org/json";
-    const NO_CORS_API = "https://api.github.com/users/octocat"; // GitHub API doesn't allow * CORS
+    const NO_CORS_API = "https://www.google.com/"; 
     const PROXY_ENDPOINT = "/corsproxy/";
 
     function rawHtmlResponse(html) {
@@ -25,13 +25,13 @@ export default {
       <body>
         <h1>CORS Proxy Test</h1>
         
-        <h2>1. Direct API Call (Will Fail - CORS Error)</h2>
-        <button onclick="testDirectCall()">Test Direct Call</button>
-        <div id="direct-result" style="background: #f0f0f0; padding: 10px; margin: 10px 0;"></div>
+        <h2>1. Direct API Call to Google (Will Fail - CORS Error)</h2>
+        <button onclick="testDirectCall()">Test Direct Call to Google</button>
+        <div id="direct-result" style="background: #f0f0f0; padding: 10px; margin: 10px 0;">Click button to test direct CORS-blocked request</div>
         
-        <h2>2. Via CORS Proxy (Should Work)</h2>
-        <button onclick="testProxyCall()">Test Proxy Call</button>
-        <div id="proxy-result" style="background: #f0f0f0; padding: 10px; margin: 10px 0;"></div>
+        <h2>2. Via CORS Proxy to Google (Should Work)</h2>
+        <button onclick="testProxyCall()">Test Proxy Call to Google</button>
+        <div id="proxy-result" style="background: #f0f0f0; padding: 10px; margin: 10px 0;">Click button to test proxied request</div>
         
         <h2>3. POST via CORS Proxy</h2>
         <button onclick="testProxyPost()">Test Proxy POST</button>
@@ -41,22 +41,22 @@ export default {
         async function testDirectCall() {
           const resultDiv = document.getElementById('direct-result');
           try {
-            resultDiv.innerHTML = '⏳ Making direct call...';
+            resultDiv.innerHTML = '⏳ Making direct call to Google...';
             const response = await fetch('${NO_CORS_API}');
-            const data = await response.json();
-            resultDiv.innerHTML = '✅ Success: ' + JSON.stringify(data, null, 2);
+            const text = await response.text();
+            resultDiv.innerHTML = '✅ Unexpected Success: ' + text.substring(0, 200) + '...';
           } catch (error) {
-            resultDiv.innerHTML = '❌ CORS Error (Expected): ' + error.message;
+            resultDiv.innerHTML = '❌ CORS Error (Expected): <code>' + error.message + '</code>';
           }
         }
         
         async function testProxyCall() {
           const resultDiv = document.getElementById('proxy-result');
           try {
-            resultDiv.innerHTML = '⏳ Making proxy call...';
+            resultDiv.innerHTML = '⏳ Making proxy call to Google...';
             const response = await fetch('${PROXY_ENDPOINT}?apiurl=${NO_CORS_API}');
-            const data = await response.json();
-            resultDiv.innerHTML = '✅ Success via proxy: <pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            const text = await response.text();
+            resultDiv.innerHTML = '✅ Success via proxy: <pre>' + text.substring(0, 500) + '...</pre>';
           } catch (error) {
             resultDiv.innerHTML = '❌ Error: ' + error.message;
           }

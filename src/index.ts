@@ -82,7 +82,13 @@ export default {
         </div>
 
         <div class="section">
-          <h2>6. Original Cloudflare Tests</h2>
+          <h2>7. Origin Enforcement Test (Like Production)</h2>
+          <p><strong>Current Origin:</strong> <code id="current-origin"></code></p>
+          <button onclick="testStrictOrigin()">Test Strict Origin Enforcement</button>
+          <button onclick="testStrictOriginProxy()">Test Strict Origin via Proxy</button>
+          <button onclick="simulateDifferentOrigin()">Simulate Different Origin Request</button>
+          <div id="origin-result" class="result">Click buttons to test origin-based CORS enforcement</div>
+        </div>
           <button onclick="runOriginalTests()">Run All Original Tests</button>
           <div class="result">
             <strong>GET without CORS Proxy:</strong> <code id="noproxy">Not tested</code><br>
@@ -305,7 +311,43 @@ export default {
           }
         }
 
-        // 6. ORIGINAL TESTS
+        // Show current origin on page load
+        document.getElementById('current-origin').textContent = window.location.origin;
+
+        // 7. ORIGIN ENFORCEMENT TESTS
+        async function testStrictOrigin() {
+          try {
+            updateResult('origin-result', '⏳ Testing strict origin endpoint...', 'info');
+            const response = await fetch('/strict-origin-test');
+            const data = await response.json();
+            updateResult('origin-result', '✅ Strict Origin Success:<pre>' + JSON.stringify(data, null, 2) + '</pre>', 'success');
+          } catch (error) {
+            updateResult('origin-result', '❌ Strict Origin Failed: ' + error.message + '<br><small>This endpoint only allows specific origins</small>', 'error');
+          }
+        }
+
+        async function testStrictOriginProxy() {
+          try {
+            updateResult('origin-result', '⏳ Testing strict origin via proxy...', 'info');
+            const response = await fetch('${PROXY_ENDPOINT}?apiurl=' + window.location.origin + '/strict-origin-test');
+            const data = await response.json();
+            updateResult('origin-result', '✅ Strict Origin via Proxy Success:<pre>' + JSON.stringify(data, null, 2) + '</pre>', 'success');
+          } catch (error) {
+            updateResult('origin-result', '❌ Strict Origin via Proxy Failed: ' + error.message, 'error');
+          }
+        }
+
+        async function simulateDifferentOrigin() {
+          try {
+            updateResult('origin-result', '⏳ Simulating request from different origin...', 'info');
+            // This simulates what would happen if called from a different domain
+            const response = await fetch('${PROXY_ENDPOINT}?apiurl=' + window.location.origin + '/strict-origin-test&simulate-origin=https://evil-site.com');
+            const data = await response.json();
+            updateResult('origin-result', '⚠️ Different Origin Response:<pre>' + JSON.stringify(data, null, 2) + '</pre>', 'error');
+          } catch (error) {
+            updateResult('origin-result', '❌ Different Origin Blocked (Expected): ' + error.message, 'success');
+          }
+        }
         async function runOriginalTests() {
           const reqs = {};
           
@@ -399,6 +441,55 @@ export default {
     }
 
     const url = new URL(request.url);
+    
+    // Handle strict origin enforcement test endpoint
+    if (url.pathname === '/strict-origin-test') {
+      const origin = request.headers.get('Origin');
+      const simulatedOrigin = url.searchParams.get('simulate-origin');
+      const testOrigin = simulatedOrigin || origin;
+      
+      // Define allowed origins (example for demonstration)
+      const allowedOrigins = [
+        'https://example.com',
+        // Add your current worker domain for testing
+        url.origin
+      ];
+      
+      const responseData = {
+        message: "Strict Origin Enforcement Test",
+        requestOrigin: testOrigin,
+        allowedOrigins: allowedOrigins,
+        isAllowed: allowedOrigins.includes(testOrigin),
+        timestamp: new Date().toISOString(),
+        note: simulatedOrigin ? "Simulated origin request" : "Real origin request"
+      };
+      
+      // Only add CORS headers if origin is in allowlist
+      if (allowedOrigins.includes(testOrigin)) {
+        return new Response(JSON.stringify(responseData), {
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": testOrigin,
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Max-Age": "86400"
+          }
+        });
+      } else {
+        // No CORS headers = browser will block
+        return new Response(JSON.stringify({
+          ...responseData,
+          error: "Origin not allowed",
+          message: "This endpoint only allows requests from specific origins"
+        }), {
+          status: 403,
+          headers: {
+            "Content-Type": "application/json"
+            // Intentionally NO CORS headers
+          }
+        });
+      }
+    }
+    
     if (url.pathname.startsWith(PROXY_ENDPOINT)) {
       if (request.method === "OPTIONS") {
         // Handle CORS preflight requests

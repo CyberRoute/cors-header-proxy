@@ -360,18 +360,18 @@ export default {
             const responseText = await response.text();
             
             // Format like curl output
-            let curlOutput = `> GET /strict-origin-test HTTP/2\n`;
-            curlOutput += `> Host: ${window.location.host}\n`;
-            curlOutput += `> Origin: https://evil-site.com\n`;
-            curlOutput += `> Content-Type: application/json\n`;
-            curlOutput += `>\n`;
-            curlOutput += `< HTTP/2 ${response.status} ${response.statusText}\n`;
+            let curlOutput = "> GET /strict-origin-test HTTP/2\\n";
+            curlOutput += "> Host: " + window.location.host + "\\n";
+            curlOutput += "> Origin: https://evil-site.com\\n";
+            curlOutput += "> Content-Type: application/json\\n";
+            curlOutput += ">\\n";
+            curlOutput += "< HTTP/2 " + response.status + " " + response.statusText + "\\n";
             
             // Show response headers
             for (const [key, value] of response.headers.entries()) {
-              curlOutput += `< ${key}: ${value}\n`;
+              curlOutput += "< " + key + ": " + value + "\\n";
             }
-            curlOutput += `<\n`;
+            curlOutput += "<\\n";
             curlOutput += responseText;
             
             updateResult('curl-result', 
@@ -399,18 +399,18 @@ export default {
             const responseText = await response.text();
             
             // Format like curl output
-            let curlOutput = `> GET /strict-origin-test HTTP/2\n`;
-            curlOutput += `> Host: ${window.location.host}\n`;
-            curlOutput += `> Origin: https://example.com\n`;
-            curlOutput += `> Content-Type: application/json\n`;
-            curlOutput += `>\n`;
-            curlOutput += `< HTTP/2 ${response.status} ${response.statusText}\n`;
+            let curlOutput = "> GET /strict-origin-test HTTP/2\\n";
+            curlOutput += "> Host: " + window.location.host + "\\n";
+            curlOutput += "> Origin: https://example.com\\n";
+            curlOutput += "> Content-Type: application/json\\n";
+            curlOutput += ">\\n";
+            curlOutput += "< HTTP/2 " + response.status + " " + response.statusText + "\\n";
             
             // Show response headers  
             for (const [key, value] of response.headers.entries()) {
-              curlOutput += `< ${key}: ${value}\n`;
+              curlOutput += "< " + key + ": " + value + "\\n";
             }
-            curlOutput += `<\n`;
+            curlOutput += "<\\n";
             curlOutput += responseText;
             
             updateResult('curl-result', 

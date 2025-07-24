@@ -82,7 +82,7 @@ export default {
         </div>
 
         <div class="section">
-          <h2>7. Origin Enforcement Test </h2>
+          <h2>7. Origin Enforcement Test (Like Production)</h2>
           <p><strong>Current Origin:</strong> <code id="current-origin"></code></p>
           <button onclick="testStrictOrigin()">Test Strict Origin Enforcement</button>
           <button onclick="testStrictOriginProxy()">Test Strict Origin via Proxy</button>
@@ -489,6 +489,8 @@ export default {
         });
       }
     }
+    
+    if (url.pathname.startsWith(PROXY_ENDPOINT)) {
       if (request.method === "OPTIONS") {
         // Handle CORS preflight requests
         return handleOptions(request);

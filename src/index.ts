@@ -101,8 +101,8 @@ export default {
         apiUrl = API_URL;
       }
 
-      console.log(\`🔄 Proxying request to: \${apiUrl}\`);
-      console.log(\`📨 Method: \${request.method}\`);
+      console.log(`🔄 Proxying request to: ${apiUrl}`);
+      console.log(`📨 Method: ${request.method}`);
 
       // Create new request to the target API
       const proxyRequest = new Request(apiUrl, {
@@ -116,8 +116,8 @@ export default {
 
       let response = await fetch(proxyRequest);
       
-      console.log(\`📥 Response status: \${response.status}\`);
-      console.log(\`📥 Response headers:\`, Object.fromEntries(response.headers));
+      console.log(`📥 Response status: ${response.status}`);
+      console.log(`📥 Response headers:`, Object.fromEntries(response.headers));
 
       // Create new response with CORS headers
       const newResponse = new Response(response.body, {

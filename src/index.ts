@@ -6,12 +6,14 @@ export default {
       "Access-Control-Max-Age": "86400",
     };
 
-    // Different API endpoints to demonstrate various CORS policies
-    const STRICT_CORS_API = "/strict-cors-api";    // Only allows https://httpbin.org
-    const OPEN_CORS_API = "/open-cors-api";        // Allows any origin (*)
-    const NO_CORS_API = "/no-cors-api";            // No CORS headers at all
+    // The URL for the remote third party API you want to fetch from
+    // but does not implement CORS
+    const API_URL = "https://httpbin.org/json"; // Changed to working API
+
+    // The endpoint you want the CORS reverse proxy to be on
     const PROXY_ENDPOINT = "/corsproxy/";
 
+    // The rest of this snippet for the demo page
     function rawHtmlResponse(html) {
       return new Response(html, {
         headers: {
@@ -24,130 +26,48 @@ export default {
       <!DOCTYPE html>
       <html>
       <body>
-        <h1>CORS Policy Demonstration</h1>
-        
-        <h2>1. Strict CORS API (Only allows https://httpbin.org)</h2>
-        <button onclick="testStrictCors()">Test Strict CORS Direct</button>
-        <button onclick="testStrictCorsProxy()">Test Strict CORS via Proxy</button>
-        <div id="strict-result" style="background: #ffe6e6; padding: 10px; margin: 10px 0; border-left: 4px solid #ff4444;">Click buttons to test strict CORS policy</div>
-        
-        <h2>2. Open CORS API (Allows any origin *)</h2>
-        <button onclick="testOpenCors()">Test Open CORS Direct</button>
-        <button onclick="testOpenCorsProxy()">Test Open CORS via Proxy</button>
-        <div id="open-result" style="background: #e6ffe6; padding: 10px; margin: 10px 0; border-left: 4px solid #44ff44;">Click buttons to test open CORS policy</div>
-        
-        <h2>3. No CORS API (No CORS headers)</h2>
-        <button onclick="testNoCors()">Test No CORS Direct</button>
-        <button onclick="testNoCorsProxy()">Test No CORS via Proxy</button>
-        <div id="no-cors-result" style="background: #fff0e6; padding: 10px; margin: 10px 0; border-left: 4px solid #ff8800;">Click buttons to test no CORS policy</div>
-        
-        <h2>3. POST via CORS Proxy</h2>
-        <button onclick="testProxyPost()">Test Proxy POST</button>
-        <div id="post-result" style="background: #f0f0f0; padding: 10px; margin: 10px 0;"></div>
-        
+        <h1>API GET without CORS Proxy</h1>
+        <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#Checking_that_the_fetch_was_successful">Shows TypeError: Failed to fetch since CORS is misconfigured</a>
+        <p id="noproxy-status"/>
+        <code id="noproxy">Waiting</code>
+        <h1>API GET with CORS Proxy</h1>
+        <p id="proxy-status"/>
+        <code id="proxy">Waiting</code>
+        <h1>API POST with CORS Proxy + Preflight</h1>
+        <p id="proxypreflight-status"/>
+        <code id="proxypreflight">Waiting</code>
         <script>
-        // 1. STRICT CORS TESTS
-        async function testStrictCors() {
-          const resultDiv = document.getElementById('strict-result');
+        let reqs = {};
+        reqs.noproxy = () => {
+          return fetch("${API_URL}").then(r => r.json())
+        }
+        reqs.proxy = async () => {
+          let href = "${PROXY_ENDPOINT}?apiurl=${API_URL}"
+          return fetch(window.location.origin + href).then(r => r.json())
+        }
+        reqs.proxypreflight = async () => {
+          let href = "${PROXY_ENDPOINT}?apiurl=${API_URL}"
+          let response = await fetch(window.location.origin + href, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              msg: "Hello world!"
+            })
+          })
+          return response.json()
+        }
+        (async () => {
+        for (const [reqName, req] of Object.entries(reqs)) {
           try {
-            resultDiv.innerHTML = '⏳ Testing strict CORS (only allows httpbin.org)...';
-            const response = await fetch('${STRICT_CORS_API}');
-            const data = await response.json();
-            resultDiv.innerHTML = '✅ Unexpected Success: <pre>' + JSON.stringify(data, null, 2) + '</pre>';
-          } catch (error) {
-            resultDiv.innerHTML = '❌ CORS Error (Expected): <code>' + error.message + '</code><br><small>This API only allows requests from https://httpbin.org</small>';
+            let data = await req()
+            document.getElementById(reqName).textContent = JSON.stringify(data)
+          } catch (e) {
+            document.getElementById(reqName).textContent = e
           }
         }
-        
-        async function testStrictCorsProxy() {
-          const resultDiv = document.getElementById('strict-result');
-          try {
-            resultDiv.innerHTML = '⏳ Testing strict CORS via proxy...';
-            const response = await fetch('${PROXY_ENDPOINT}?apiurl=' + window.location.origin + '${STRICT_CORS_API}');
-            const data = await response.json();
-            resultDiv.innerHTML = '✅ Success via proxy: <pre>' + JSON.stringify(data, null, 2) + '</pre>';
-          } catch (error) {
-            resultDiv.innerHTML = '❌ Error: ' + error.message;
-          }
-        }
-        
-        // 2. OPEN CORS TESTS  
-        async function testOpenCors() {
-          const resultDiv = document.getElementById('open-result');
-          try {
-            resultDiv.innerHTML = '⏳ Testing open CORS (allows any origin)...';
-            const response = await fetch('${OPEN_CORS_API}');
-            const data = await response.json();
-            resultDiv.innerHTML = '✅ Success (Expected): <pre>' + JSON.stringify(data, null, 2) + '</pre>';
-          } catch (error) {
-            resultDiv.innerHTML = '❌ Unexpected Error: <code>' + error.message + '</code>';
-          }
-        }
-        
-        async function testOpenCorsProxy() {
-          const resultDiv = document.getElementById('open-result');
-          try {
-            resultDiv.innerHTML = '⏳ Testing open CORS via proxy...';
-            const response = await fetch('${PROXY_ENDPOINT}?apiurl=' + window.location.origin + '${OPEN_CORS_API}');
-            const data = await response.json();
-            resultDiv.innerHTML = '✅ Success via proxy: <pre>' + JSON.stringify(data, null, 2) + '</pre>';
-          } catch (error) {
-            resultDiv.innerHTML = '❌ Error: ' + error.message;
-          }
-        }
-        
-        // 3. NO CORS TESTS
-        async function testNoCors() {
-          const resultDiv = document.getElementById('no-cors-result');
-          try {
-            resultDiv.innerHTML = '⏳ Testing no CORS headers...';
-            const response = await fetch('${NO_CORS_API}');
-            const data = await response.json();
-            resultDiv.innerHTML = '✅ Unexpected Success: <pre>' + JSON.stringify(data, null, 2) + '</pre>';
-          } catch (error) {
-            resultDiv.innerHTML = '❌ CORS Error (Expected): <code>' + error.message + '</code><br><small>This API sends no CORS headers</small>';
-          }
-        }
-        
-        async function testNoCorsProxy() {
-          const resultDiv = document.getElementById('no-cors-result');
-          try {
-            resultDiv.innerHTML = '⏳ Testing no CORS via proxy...';
-            const response = await fetch('${PROXY_ENDPOINT}?apiurl=' + window.location.origin + '${NO_CORS_API}');
-            const data = await response.json();
-            resultDiv.innerHTML = '✅ Success via proxy: <pre>' + JSON.stringify(data, null, 2) + '</pre>';
-          } catch (error) {
-            resultDiv.innerHTML = '❌ Error: ' + error.message;
-          }
-        }
-        
-        async function testProxyPost() {
-          const resultDiv = document.getElementById('post-result');
-          try {
-            resultDiv.innerHTML = '⏳ Making POST via proxy...';
-            const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://httpbin.org/post', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ message: 'Hello from CORS proxy!' })
-            });
-            
-            // Debug: Check what we actually got
-            const responseText = await response.text();
-            console.log('POST Response status:', response.status);
-            console.log('POST Response text:', responseText);
-            console.log('POST Response headers:', Object.fromEntries(response.headers));
-            
-            // Try to parse as JSON
-            try {
-              const data = JSON.parse(responseText);
-              resultDiv.innerHTML = '✅ POST Success: <pre>' + JSON.stringify(data, null, 2) + '</pre>';
-            } catch (parseError) {
-              resultDiv.innerHTML = '⚠️ Response received but not JSON:<br><strong>Status:</strong> ' + response.status + '<br><strong>Content:</strong><pre>' + responseText + '</pre>';
-            }
-          } catch (error) {
-            resultDiv.innerHTML = '❌ Error: ' + error.message;
-          }
-        }
+      })()
         </script>
       </body>
       </html>
@@ -161,36 +81,23 @@ export default {
         apiUrl = API_URL;
       }
 
-      console.log(`🔄 Proxying request to: ${apiUrl}`);
-      console.log(`📨 Method: ${request.method}`);
+      // Rewrite request to point to API URL. This also makes the request mutable
+      // so you can add the correct Origin header to make the API server think
+      // that this request is not cross-site.
+      request = new Request(apiUrl, request);
+      request.headers.set("Origin", new URL(apiUrl).origin);
+      let response = await fetch(request);
+      // Recreate the response so you can modify the headers
 
-      // Create new request to the target API
-      const proxyRequest = new Request(apiUrl, {
-        method: request.method,
-        headers: request.headers,
-        body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null,
-      });
+      response = new Response(response.body, response);
+      // Set CORS headers
 
-      // Set the Origin header to match the target API's domain
-      proxyRequest.headers.set("Origin", new URL(apiUrl).origin);
+      response.headers.set("Access-Control-Allow-Origin", url.origin);
 
-      let response = await fetch(proxyRequest);
-      
-      console.log(`📥 Response status: ${response.status}`);
-      console.log(`📥 Response headers:`, Object.fromEntries(response.headers));
+      // Append to/Add Vary header so browser will cache response correctly
+      response.headers.append("Vary", "Origin");
 
-      // Create new response with CORS headers
-      const newResponse = new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: {
-          ...Object.fromEntries(response.headers),
-          "Access-Control-Allow-Origin": url.origin,
-          "Vary": "Origin"
-        }
-      });
-
-      return newResponse;
+      return response;
     }
 
     async function handleOptions(request) {
@@ -199,7 +106,7 @@ export default {
         request.headers.get("Access-Control-Request-Method") !== null &&
         request.headers.get("Access-Control-Request-Headers") !== null
       ) {
-        console.log("🔀 Handling CORS preflight request");
+        // Handle CORS preflight requests.
         return new Response(null, {
           headers: {
             ...corsHeaders,
@@ -209,6 +116,7 @@ export default {
           },
         });
       } else {
+        // Handle standard OPTIONS request.
         return new Response(null, {
           headers: {
             Allow: "GET, HEAD, POST, OPTIONS",
@@ -218,75 +126,16 @@ export default {
     }
 
     const url = new URL(request.url);
-    
-    // Handle different CORS policy demonstrations
-    if (url.pathname === STRICT_CORS_API) {
-      const origin = request.headers.get('Origin');
-      const allowedOrigin = 'https://httpbin.org';
-      
-      const responseData = {
-        message: "Strict CORS API - only allows https://httpbin.org",
-        requestOrigin: origin,
-        allowedOrigin: allowedOrigin,
-        timestamp: new Date().toISOString()
-      };
-      
-      // Only add CORS headers if origin matches exactly
-      if (origin === allowedOrigin) {
-        return new Response(JSON.stringify(responseData), {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": allowedOrigin,
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Max-Age": "86400"
-          }
-        });
-      } else {
-        // No CORS headers = browser will block
-        return new Response(JSON.stringify(responseData), {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        });
-      }
-    }
-    
-    if (url.pathname === OPEN_CORS_API) {
-      return new Response(JSON.stringify({
-        message: "Open CORS API - allows any origin (*)",
-        timestamp: new Date().toISOString(),
-        policy: "Access-Control-Allow-Origin: *"
-      }), {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Max-Age": "86400"
-        }
-      });
-    }
-    
-    if (url.pathname === NO_CORS_API) {
-      return new Response(JSON.stringify({
-        message: "No CORS API - sends no CORS headers at all",
-        timestamp: new Date().toISOString(),
-        policy: "No CORS headers"
-      }), {
-        headers: {
-          "Content-Type": "application/json"
-          // Intentionally NO CORS headers
-        }
-      });
-    }
-    
     if (url.pathname.startsWith(PROXY_ENDPOINT)) {
       if (request.method === "OPTIONS") {
+        // Handle CORS preflight requests
         return handleOptions(request);
       } else if (
         request.method === "GET" ||
         request.method === "HEAD" ||
         request.method === "POST"
       ) {
+        // Handle requests to the API server
         return handleRequest(request);
       } else {
         return new Response(null, {

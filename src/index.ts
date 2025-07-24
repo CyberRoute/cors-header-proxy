@@ -375,7 +375,7 @@ export default {
             curlOutput += responseText;
             
             updateResult('curl-result', 
-              `🔄 Simulated curl response:\n<pre style="font-family: monospace; font-size: 12px;">${curlOutput}</pre>`, 
+              "🔄 Simulated curl response:\\n<pre style='font-family: monospace; font-size: 12px;'>" + curlOutput + "</pre>", 
               response.ok ? 'success' : 'error'
             );
             
@@ -414,7 +414,7 @@ export default {
             curlOutput += responseText;
             
             updateResult('curl-result', 
-              `🔄 Simulated curl response:\n<pre style="font-family: monospace; font-size: 12px;">${curlOutput}</pre>`, 
+              "🔄 Simulated curl response:\\n<pre style='font-family: monospace; font-size: 12px;'>" + curlOutput + "</pre>", 
               response.ok ? 'success' : 'error'
             );
             

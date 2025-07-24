@@ -46,7 +46,7 @@ export default {
           return fetch(window.location.origin + href).then(r => r.json())
         }
         reqs.proxypreflight = async () => {
-          let href = "${PROXY_ENDPOINT}?apiurl=${API_URL}"
+          let href = "${PROXY_ENDPOINT}?apiurl=https://httpbin.org/post"
           let response = await fetch(window.location.origin + href, {
             method: "POST",
             headers: {

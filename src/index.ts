@@ -82,12 +82,39 @@ export default {
         </div>
 
         <div class="section">
-          <h2>7. Origin Enforcement Test (Like Production)</h2>
+          <h2>7. Origin Enforcement Test</h2>
           <p><strong>Current Origin:</strong> <code id="current-origin"></code></p>
           <button onclick="testStrictOrigin()">Test Strict Origin Enforcement</button>
           <button onclick="testStrictOriginProxy()">Test Strict Origin via Proxy</button>
           <button onclick="simulateDifferentOrigin()">Simulate Different Origin Request</button>
           <div id="origin-result" class="result">Click buttons to test origin-based CORS enforcement</div>
+        </div>
+
+        <div class="section">
+          <h2>8. Curl-like Testing (Simulated)</h2>
+          <p>Simulate curl requests and see the raw HTTP responses:</p>
+          <button onclick="simulateCurlBadOrigin()">Simulate: curl with Bad Origin</button>
+          <button onclick="simulateCurlGoodOrigin()">Simulate: curl with Good Origin</button>
+          <button onclick="copyBadOriginCurl()">📋 Copy Real Curl Command (Bad Origin)</button>
+          <button onclick="copyGoodOriginCurl()">📋 Copy Real Curl Command (Good Origin)</button>
+          <div id="curl-result" class="result">Click buttons to simulate curl requests or copy real curl commands</div>
+        </div>
+
+        <div class="section">
+          <h2>9. Curl Commands for Terminal Testing</h2>
+          <p>Copy these commands to test with real curl in your terminal:</p>
+          <div style="background: #f8f8f8; padding: 10px; border-radius: 3px; margin: 10px 0;">
+            <strong>Test Bad Origin (should return 403):</strong><br>
+            <code style="font-size: 12px; word-break: break-all;">
+              curl -H "Origin: https://evil-site.com" <span id="worker-url-bad"></span>/strict-origin-test
+            </code>
+          </div>
+          <div style="background: #f8f8f8; padding: 10px; border-radius: 3px; margin: 10px 0;">
+            <strong>Test Good Origin (should return 200):</strong><br>
+            <code style="font-size: 12px; word-break: break-all;">
+              curl -H "Origin: https://example.com" <span id="worker-url-good"></span>/strict-origin-test
+            </code>
+          </div>
         </div>
           <button onclick="runOriginalTests()">Run All Original Tests</button>
           <div class="result">
@@ -311,8 +338,107 @@ export default {
           }
         }
 
-        // Show current origin on page load
+        // Show current origin and worker URL on page load
         document.getElementById('current-origin').textContent = window.location.origin;
+        document.getElementById('worker-url-bad').textContent = window.location.origin;
+        document.getElementById('worker-url-good').textContent = window.location.origin;
+
+        // 8. CURL-LIKE SIMULATION
+        async function simulateCurlBadOrigin() {
+          try {
+            updateResult('curl-result', '⏳ Simulating curl with bad origin...', 'info');
+            
+            // Make request but capture all response details
+            const response = await fetch('/strict-origin-test', {
+              method: 'GET',
+              headers: {
+                'Origin': 'https://evil-site.com',
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            const responseText = await response.text();
+            
+            // Format like curl output
+            let curlOutput = `> GET /strict-origin-test HTTP/2\n`;
+            curlOutput += `> Host: ${window.location.host}\n`;
+            curlOutput += `> Origin: https://evil-site.com\n`;
+            curlOutput += `> Content-Type: application/json\n`;
+            curlOutput += `>\n`;
+            curlOutput += `< HTTP/2 ${response.status} ${response.statusText}\n`;
+            
+            // Show response headers
+            for (const [key, value] of response.headers.entries()) {
+              curlOutput += `< ${key}: ${value}\n`;
+            }
+            curlOutput += `<\n`;
+            curlOutput += responseText;
+            
+            updateResult('curl-result', 
+              `🔄 Simulated curl response:\n<pre style="font-family: monospace; font-size: 12px;">${curlOutput}</pre>`, 
+              response.ok ? 'success' : 'error'
+            );
+            
+          } catch (error) {
+            updateResult('curl-result', '❌ Simulation failed: ' + error.message, 'error');
+          }
+        }
+
+        async function simulateCurlGoodOrigin() {
+          try {
+            updateResult('curl-result', '⏳ Simulating curl with good origin...', 'info');
+            
+            const response = await fetch('/strict-origin-test', {
+              method: 'GET',
+              headers: {
+                'Origin': 'https://example.com',
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            const responseText = await response.text();
+            
+            // Format like curl output
+            let curlOutput = `> GET /strict-origin-test HTTP/2\n`;
+            curlOutput += `> Host: ${window.location.host}\n`;
+            curlOutput += `> Origin: https://example.com\n`;
+            curlOutput += `> Content-Type: application/json\n`;
+            curlOutput += `>\n`;
+            curlOutput += `< HTTP/2 ${response.status} ${response.statusText}\n`;
+            
+            // Show response headers  
+            for (const [key, value] of response.headers.entries()) {
+              curlOutput += `< ${key}: ${value}\n`;
+            }
+            curlOutput += `<\n`;
+            curlOutput += responseText;
+            
+            updateResult('curl-result', 
+              `🔄 Simulated curl response:\n<pre style="font-family: monospace; font-size: 12px;">${curlOutput}</pre>`, 
+              response.ok ? 'success' : 'error'
+            );
+            
+          } catch (error) {
+            updateResult('curl-result', '❌ Simulation failed: ' + error.message, 'error');
+          }
+        }
+        function copyBadOriginCurl() {
+          const command = `curl -H "Origin: https://evil-site.com" ${window.location.origin}/strict-origin-test`;
+          navigator.clipboard.writeText(command).then(() => {
+            updateResult('curl-result', '✅ Bad origin curl command copied to clipboard!', 'success');
+          }).catch(() => {
+            updateResult('curl-result', '⚠️ Could not copy to clipboard. Command: <code>' + command + '</code>', 'error');
+          });
+        }
+
+        function copyGoodOriginCurl() {
+          const command = `curl -H "Origin: https://example.com" ${window.location.origin}/strict-origin-test`;
+          navigator.clipboard.writeText(command).then(() => {
+            updateResult('curl-result', '✅ Good origin curl command copied to clipboard!', 'success');
+          }).catch(() => {
+            updateResult('curl-result', '⚠️ Could not copy to clipboard. Command: <code>' + command + '</code>', 'error');
+          });
+        }
 
         // 7. ORIGIN ENFORCEMENT TESTS
         async function testStrictOrigin() {

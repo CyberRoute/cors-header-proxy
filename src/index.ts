@@ -423,7 +423,7 @@ export default {
           }
         }
         function copyBadOriginCurl() {
-          const command = `curl -H "Origin: https://evil-site.com" ${window.location.origin}/strict-origin-test`;
+          const command = 'curl -H "Origin: https://evil-site.com" ' + window.location.origin + '/strict-origin-test';
           navigator.clipboard.writeText(command).then(() => {
             updateResult('curl-result', '✅ Bad origin curl command copied to clipboard!', 'success');
           }).catch(() => {
@@ -432,7 +432,7 @@ export default {
         }
 
         function copyGoodOriginCurl() {
-          const command = `curl -H "Origin: https://example.com" ${window.location.origin}/strict-origin-test`;
+          const command = 'curl -H "Origin: https://example.com" ' + window.location.origin + '/strict-origin-test';
           navigator.clipboard.writeText(command).then(() => {
             updateResult('curl-result', '✅ Good origin curl command copied to clipboard!', 'success');
           }).catch(() => {

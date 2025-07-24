@@ -6,8 +6,9 @@ export default {
       "Access-Control-Max-Age": "86400",
     };
 
-    // Using a working API endpoint for testing
+    // Using APIs that DON'T support CORS for testing
     const API_URL = "https://httpbin.org/json";
+    const NO_CORS_API = "https://api.github.com/users/octocat"; // GitHub API doesn't allow * CORS
     const PROXY_ENDPOINT = "/corsproxy/";
 
     function rawHtmlResponse(html) {
@@ -41,7 +42,7 @@ export default {
           const resultDiv = document.getElementById('direct-result');
           try {
             resultDiv.innerHTML = '⏳ Making direct call...';
-            const response = await fetch('${API_URL}');
+            const response = await fetch('${NO_CORS_API}');
             const data = await response.json();
             resultDiv.innerHTML = '✅ Success: ' + JSON.stringify(data, null, 2);
           } catch (error) {
@@ -53,7 +54,7 @@ export default {
           const resultDiv = document.getElementById('proxy-result');
           try {
             resultDiv.innerHTML = '⏳ Making proxy call...';
-            const response = await fetch('${PROXY_ENDPOINT}?apiurl=${API_URL}');
+            const response = await fetch('${PROXY_ENDPOINT}?apiurl=${NO_CORS_API}');
             const data = await response.json();
             resultDiv.innerHTML = '✅ Success via proxy: <pre>' + JSON.stringify(data, null, 2) + '</pre>';
           } catch (error) {

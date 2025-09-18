@@ -245,33 +245,34 @@ function testCors() {
   // Create a popup window to a different origin that will try to access our proxy
   const testWindow = window.open('about:blank', 'corstest', 'width=400,height=300');
   
-  // Write HTML to the popup that will attempt cross-origin request
-  testWindow.document.write(`
-    <html>
-    <body>
-    <h3>Cross-Origin Test Window</h3>
-    <p>This window will attempt to access the proxy from about:blank origin...</p>
-    <script>
-      // This runs from about:blank origin - different from your main page
-      fetch('${window.location.origin}/corsproxy/?apiurl=https://httpbin.org/get')
-        .then(response => {
-          window.opener.postMessage({
-            success: true, 
-            message: 'Unexpected: Request succeeded from about:blank origin',
-            headers: Array.from(response.headers.entries())
-          }, '*');
-        })
-        .catch(error => {
-          window.opener.postMessage({
-            success: false,
-            message: 'Expected: CORS blocked the request',
-            error: error.message
-          }, '*');
-        });
-    </script>
-    </body>
-    </html>
-  `);
+  // Build the HTML content as a string to avoid template literal issues
+  const htmlContent = 
+    '<html>' +
+    '<body>' +
+    '<h3>Cross-Origin Test Window</h3>' +
+    '<p>This window will attempt to access the proxy from about:blank origin...</p>' +
+    '<script>' +
+    'fetch("' + window.location.origin + '/corsproxy/?apiurl=https://httpbin.org/get")' +
+      '.then(response => {' +
+        'window.opener.postMessage({' +
+          'success: true,' + 
+          'message: "Unexpected: Request succeeded from about:blank origin",' +
+          'headers: Array.from(response.headers.entries())' +
+        '}, "*");' +
+      '})' +
+      '.catch(error => {' +
+        'window.opener.postMessage({' +
+          'success: false,' +
+          'message: "Expected: CORS blocked the request",' +
+          'error: error.message' +
+        '}, "*");' +
+      '});' +
+    '</' + 'script>' +
+    '</body>' +
+    '</html>';
+  
+  // Write HTML to the popup
+  testWindow.document.write(htmlContent);
   
   // Listen for the result
   const handleMessage = (event) => {

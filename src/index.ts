@@ -239,57 +239,72 @@ async function testInvalid() {
 }
 
 function testCors() {
-  console.log('🔍 Starting CORS origin validation test...');
-  document.getElementById('cors-result').innerHTML = 'Testing CORS with different origins...';
+  console.log('Testing actual CORS blocking behavior...');
+  document.getElementById('cors-result').innerHTML = 'Setting up cross-origin test...';
   
-  console.log('📡 Testing allowed origin: https://yourdomain.com');
-  console.log('📡 Testing blocked origin: https://evil-site.com');
+  // Create a popup window to a different origin that will try to access our proxy
+  const testWindow = window.open('about:blank', 'corstest', 'width=400,height=300');
   
-  Promise.all([
-    fetch('/test-cors?origin=https://yourdomain.com').then(r => {
-      console.log('✅ Allowed origin test completed');
-      return r.json();
-    }),
-    fetch('/test-cors?origin=https://evil-site.com').then(r => {
-      console.log('❌ Blocked origin test completed');
-      return r.json();
-    })
-  ])
-  .then(([allowedResult, blockedResult]) => {
-    console.log('📊 CORS Test Results:');
-    console.log('  Allowed origin CORS headers:', allowedResult.corsHeaderPresent ? 'YES' : 'NO');
-    console.log('  Blocked origin CORS headers:', blockedResult.corsHeaderPresent ? 'YES' : 'NO');
+  // Write HTML to the popup that will attempt cross-origin request
+  testWindow.document.write(`
+    <html>
+    <body>
+    <h3>Cross-Origin Test Window</h3>
+    <p>This window will attempt to access the proxy from about:blank origin...</p>
+    <script>
+      // This runs from about:blank origin - different from your main page
+      fetch('${window.location.origin}/corsproxy/?apiurl=https://httpbin.org/get')
+        .then(response => {
+          window.opener.postMessage({
+            success: true, 
+            message: 'Unexpected: Request succeeded from about:blank origin',
+            headers: Array.from(response.headers.entries())
+          }, '*');
+        })
+        .catch(error => {
+          window.opener.postMessage({
+            success: false,
+            message: 'Expected: CORS blocked the request',
+            error: error.message
+          }, '*');
+        });
+    </script>
+    </body>
+    </html>
+  `);
+  
+  // Listen for the result
+  const handleMessage = (event) => {
+    if (event.data.success) {
+      document.getElementById('cors-result').innerHTML = 
+        'SECURITY ISSUE: Cross-origin request succeeded' + String.fromCharCode(10) +
+        'This means CORS is not properly blocking unauthorized origins' + String.fromCharCode(10) +
+        'Headers received: ' + JSON.stringify(event.data.headers, null, 2);
+      document.getElementById('cors-result').className = 'result error';
+    } else {
+      document.getElementById('cors-result').innerHTML = 
+        'SUCCESS: CORS properly blocked cross-origin request' + String.fromCharCode(10) +
+        'Error: ' + event.data.error + String.fromCharCode(10) +
+        'This proves unauthorized origins cannot access the proxy';
+      document.getElementById('cors-result').className = 'result success';
+    }
     
-    const report = [
-      'CORS Test Results:',
-      '',
-      '🟢 Allowed Origin (https://yourdomain.com):',
-      '• CORS headers: ' + (allowedResult.corsHeaderPresent ? 'YES ✓' : 'NO ✗'),
-      '• Value: ' + allowedResult.corsHeaderValue,
-      '• Browser behavior: ' + allowedResult.demonstration,
-      '',
-      '🔴 Evil Origin (https://evil-site.com):',
-      '• CORS headers: ' + (blockedResult.corsHeaderPresent ? 'YES ✗' : 'NO ✓'), 
-      '• Value: ' + blockedResult.corsHeaderValue,
-      '• Browser behavior: ' + blockedResult.demonstration,
-      '',
-      '🛡️ Security Status: ' + (allowedResult.corsHeaderPresent && !blockedResult.corsHeaderPresent ? 
-        'SECURE - Origins properly validated ✓' : 
-        'ISSUE - Check CORS configuration ✗'),
-      '',
-      '💡 Check the Network tab in DevTools to see the /test-cors requests'
-    ].join(String.fromCharCode(10));
-    
-    document.getElementById('cors-result').innerHTML = report;
-    document.getElementById('cors-result').className = 'result success';
-    
-    console.log('✨ CORS validation test completed successfully');
-  })
-  .catch(error => {
-    console.error('❌ CORS test failed:', error);
-    document.getElementById('cors-result').innerHTML = 'Test failed: ' + error.message;
-    document.getElementById('cors-result').className = 'result error';
-  });
+    testWindow.close();
+    window.removeEventListener('message', handleMessage);
+  };
+  
+  window.addEventListener('message', handleMessage);
+  
+  // Timeout fallback
+  setTimeout(() => {
+    if (!testWindow.closed) {
+      testWindow.close();
+      document.getElementById('cors-result').innerHTML = 
+        'Test timeout - check if popup was blocked';
+      document.getElementById('cors-result').className = 'result error';
+    }
+    window.removeEventListener('message', handleMessage);
+  }, 5000);
 }
 </script>
 </body>

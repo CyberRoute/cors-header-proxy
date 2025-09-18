@@ -242,46 +242,50 @@ export default {
               }
             }
 
-            function testCors() {
+           function testCors() {
               console.log('Creating cross-origin request that will trigger CORS error...');
               document.getElementById('cors-result').innerHTML = 'Creating cross-origin test...';
-
+            
               const iframe = document.createElement('iframe');
               iframe.style.display = 'none';
-
-              // Pass parent origin into iframe
+            
+              // Capture the parent origin BEFORE going into the iframe
               const parentOrigin = window.location.origin;
-              const iframeContent = '<script>' +
-                'fetch("${parentOrigin}${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get")' +
-                  '.then(response => response.json())' +
-                  '.then(data => {' +
-                    'window.parent.postMessage({success: true, data: data}, "*");' +
-                  '})' +
-                  '.catch(error => {' +
-                    'window.parent.postMessage({success: false, error: error.message}, "*");' +
-                  '});' +
-                '<' + '/script>';
-
+            
+              const iframeContent = `
+                <script>
+                  fetch("${parentOrigin}${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get")
+                    .then(response => response.json())
+                    .then(data => {
+                      window.parent.postMessage({success: true, data: data}, "*");
+                    })
+                    .catch(error => {
+                      window.parent.postMessage({success: false, error: error.message}, "*");
+                    });
+                <\/script>
+              `;
+            
               iframe.src = 'data:text/html,' + encodeURIComponent(iframeContent);
-
+            
               const handleMessage = (event) => {
                 if (event.data.success) {
-                  document.getElementById('cors-result').innerHTML = 
+                  document.getElementById('cors-result').innerHTML =
                     'UNEXPECTED: Cross-origin request succeeded\\nThis indicates a security issue';
                   document.getElementById('cors-result').className = 'result error';
                 } else {
-                  document.getElementById('cors-result').innerHTML = 
-                    'SUCCESS: CORS blocked the request\\nError: ' + event.data.error + 
+                  document.getElementById('cors-result').innerHTML =
+                    'SUCCESS: CORS blocked the request\\nError: ' + event.data.error +
                     '\\nCheck console for full CORS error message';
                   document.getElementById('cors-result').className = 'result success';
                 }
                 window.removeEventListener('message', handleMessage);
                 document.body.removeChild(iframe);
               };
-
+            
               window.addEventListener('message', handleMessage);
               document.body.appendChild(iframe);
             }
+
           </script>
         </body>
         </html>

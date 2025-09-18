@@ -245,10 +245,14 @@ export default {
             function testCors() {
               console.log('Creating cross-origin request that will trigger CORS error...');
               document.getElementById('cors-result').innerHTML = 'Creating cross-origin test...';
+
               const iframe = document.createElement('iframe');
               iframe.style.display = 'none';
+
+              // Pass parent origin into iframe
+              const parentOrigin = window.location.origin;
               const iframeContent = '<script>' +
-                'fetch(window.parent.location.origin + "${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get")' +
+                'fetch("${parentOrigin}${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get")' +
                   '.then(response => response.json())' +
                   '.then(data => {' +
                     'window.parent.postMessage({success: true, data: data}, "*");' +
@@ -256,8 +260,10 @@ export default {
                   '.catch(error => {' +
                     'window.parent.postMessage({success: false, error: error.message}, "*");' +
                   '});' +
-                '</' + 'script>';
+                '<' + '/script>';
+
               iframe.src = 'data:text/html,' + encodeURIComponent(iframeContent);
+
               const handleMessage = (event) => {
                 if (event.data.success) {
                   document.getElementById('cors-result').innerHTML = 
@@ -272,6 +278,7 @@ export default {
                 window.removeEventListener('message', handleMessage);
                 document.body.removeChild(iframe);
               };
+
               window.addEventListener('message', handleMessage);
               document.body.appendChild(iframe);
             }

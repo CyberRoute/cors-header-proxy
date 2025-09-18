@@ -163,8 +163,7 @@ export default {
     }
 
     function getSecureDemoPage() {
-      return `
-<!DOCTYPE html>
+      return `<!DOCTYPE html>
 <html>
 <head>
 <title>CORS Proxy Demo</title>
@@ -213,7 +212,7 @@ async function testValid() {
     document.getElementById('valid-result').innerHTML = 'Testing...';
     const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get');
     const data = await response.json();
-    document.getElementById('valid-result').innerHTML = 'SUCCESS: Request worked\\n' + JSON.stringify(data, null, 2);
+    document.getElementById('valid-result').innerHTML = 'SUCCESS: Request worked' + String.fromCharCode(10) + JSON.stringify(data, null, 2);
     document.getElementById('valid-result').className = 'result success';
   } catch (error) {
     document.getElementById('valid-result').innerHTML = 'ERROR: ' + error.message;
@@ -227,10 +226,10 @@ async function testInvalid() {
     const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://blocked-api.com/data');
     const data = await response.json();
     if (response.status === 403) {
-      document.getElementById('invalid-result').innerHTML = 'SUCCESS: API correctly blocked\\n' + JSON.stringify(data, null, 2);
+      document.getElementById('invalid-result').innerHTML = 'SUCCESS: API correctly blocked' + String.fromCharCode(10) + JSON.stringify(data, null, 2);
       document.getElementById('invalid-result').className = 'result success';
     } else {
-      document.getElementById('invalid-result').innerHTML = 'WARNING: API was not blocked!\\n' + JSON.stringify(data, null, 2);
+      document.getElementById('invalid-result').innerHTML = 'WARNING: API was not blocked!' + String.fromCharCode(10) + JSON.stringify(data, null, 2);
       document.getElementById('invalid-result').className = 'result error';
     }
   } catch (error) {
@@ -240,29 +239,27 @@ async function testInvalid() {
 }
 
 function testCors() {
+  console.log('Creating cross-origin request that will trigger CORS error...');
+  document.getElementById('cors-result').innerHTML = 'Creating cross-origin test...';
+  
   const iframe = document.createElement('iframe');
   iframe.style.display = 'none';
 
-  // Get parent origin inside browser
-  const parentOrigin = window.location.origin;
-
-  const iframeContent = `
-    <script>
-      fetch("${parentOrigin}${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get")
-        .then(r => r.json())
-        .then(data => { window.parent.postMessage({success: true, data}, "*"); })
-        .catch(err => { window.parent.postMessage({success: false, error: err.message}, "*"); });
-    <\/script>
-  `;
+  const iframeContent = '<script>' +
+    'fetch(window.parent.location.origin + "${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get")' +
+      '.then(r => r.json())' +
+      '.then(data => { window.parent.postMessage({success: true, data}, "*"); })' +
+      '.catch(err => { window.parent.postMessage({success: false, error: err.message}, "*"); });' +
+    '</' + 'script>';
 
   iframe.src = 'data:text/html,' + encodeURIComponent(iframeContent);
 
   const handleMessage = (event) => {
     if (event.data.success) {
-      document.getElementById('cors-result').innerHTML = 'UNEXPECTED: Cross-origin request succeeded\\nThis indicates a security issue';
+      document.getElementById('cors-result').innerHTML = 'UNEXPECTED: Cross-origin request succeeded' + String.fromCharCode(10) + 'This indicates a security issue';
       document.getElementById('cors-result').className = 'result error';
     } else {
-      document.getElementById('cors-result').innerHTML = 'SUCCESS: CORS blocked the request\\nError: ' + event.data.error + '\\nCheck console for full CORS error message';
+      document.getElementById('cors-result').innerHTML = 'SUCCESS: CORS blocked the request' + String.fromCharCode(10) + 'Error: ' + event.data.error + String.fromCharCode(10) + 'Check console for full CORS error message';
       document.getElementById('cors-result').className = 'result success';
     }
     window.removeEventListener('message', handleMessage);
@@ -274,9 +271,7 @@ function testCors() {
 }
 </script>
 </body>
-</html>
-      `;
-      return iframeContent;
+</html>`;
     }
 
     const url = new URL(request.url);

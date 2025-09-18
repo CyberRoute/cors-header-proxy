@@ -239,39 +239,54 @@ async function testInvalid() {
 }
 
 function testCors() {
-  console.log('Testing CORS behavior with different origins...');
+  console.log('🔍 Starting CORS origin validation test...');
   document.getElementById('cors-result').innerHTML = 'Testing CORS with different origins...';
   
+  console.log('📡 Testing allowed origin: https://yourdomain.com');
+  console.log('📡 Testing blocked origin: https://evil-site.com');
+  
   Promise.all([
-    fetch('/test-cors?origin=https://yourdomain.com'),
-    fetch('/test-cors?origin=https://evil-site.com')
+    fetch('/test-cors?origin=https://yourdomain.com').then(r => {
+      console.log('✅ Allowed origin test completed');
+      return r.json();
+    }),
+    fetch('/test-cors?origin=https://evil-site.com').then(r => {
+      console.log('❌ Blocked origin test completed');
+      return r.json();
+    })
   ])
-  .then(responses => Promise.all(responses.map(r => r.json())))
   .then(([allowedResult, blockedResult]) => {
+    console.log('📊 CORS Test Results:');
+    console.log('  Allowed origin CORS headers:', allowedResult.corsHeaderPresent ? 'YES' : 'NO');
+    console.log('  Blocked origin CORS headers:', blockedResult.corsHeaderPresent ? 'YES' : 'NO');
+    
     const report = [
       'CORS Test Results:',
       '',
-      'Allowed Origin (https://yourdomain.com):',
-      '• CORS headers: ' + (allowedResult.corsHeaderPresent ? 'YES' : 'NO'),
+      '🟢 Allowed Origin (https://yourdomain.com):',
+      '• CORS headers: ' + (allowedResult.corsHeaderPresent ? 'YES ✓' : 'NO ✗'),
       '• Value: ' + allowedResult.corsHeaderValue,
       '• Browser behavior: ' + allowedResult.demonstration,
       '',
-      'Evil Origin (https://evil-site.com):',
-      '• CORS headers: ' + (blockedResult.corsHeaderPresent ? 'YES' : 'NO'), 
+      '🔴 Evil Origin (https://evil-site.com):',
+      '• CORS headers: ' + (blockedResult.corsHeaderPresent ? 'YES ✗' : 'NO ✓'), 
       '• Value: ' + blockedResult.corsHeaderValue,
       '• Browser behavior: ' + blockedResult.demonstration,
       '',
-      'Security Status: ' + (allowedResult.corsHeaderPresent && !blockedResult.corsHeaderPresent ? 
-        'SECURE - Origins properly validated' : 
-        'ISSUE - Check CORS configuration')
+      '🛡️ Security Status: ' + (allowedResult.corsHeaderPresent && !blockedResult.corsHeaderPresent ? 
+        'SECURE - Origins properly validated ✓' : 
+        'ISSUE - Check CORS configuration ✗'),
+      '',
+      '💡 Check the Network tab in DevTools to see the /test-cors requests'
     ].join(String.fromCharCode(10));
     
     document.getElementById('cors-result').innerHTML = report;
     document.getElementById('cors-result').className = 'result success';
     
-    console.log('CORS test completed - check results above');
+    console.log('✨ CORS validation test completed successfully');
   })
   .catch(error => {
+    console.error('❌ CORS test failed:', error);
     document.getElementById('cors-result').innerHTML = 'Test failed: ' + error.message;
     document.getElementById('cors-result').className = 'result error';
   });

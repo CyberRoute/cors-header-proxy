@@ -271,6 +271,13 @@ export default {
             <div id="invalid-result" class="result">Click to test blocked API</div>
           </div>
 
+          <div class="test-section">
+            <h3>Test 3: Cross-Origin CORS Test (Should Show CORS Error)</h3>
+            <p>This creates a real cross-origin request that will be blocked by CORS:</p>
+            <button class="error-button" onclick="testCors()">Test CORS Blocking</button>
+            <div id="cors-result" class="result">Click to trigger actual CORS error in console</div>
+          </div>
+
           <script>
             async function testValid() {
               try {
@@ -305,6 +312,47 @@ export default {
                 document.getElementById('invalid-result').innerHTML = 'ERROR: ' + error.message;
                 document.getElementById('invalid-result').className = 'result error';
               }
+            }
+
+            function testCors() {
+              console.log('Creating cross-origin request that will trigger CORS error...');
+              document.getElementById('cors-result').innerHTML = 'Creating cross-origin test...';
+              
+              // Create iframe with data: URL (different origin)
+              const iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              iframe.src = 'data:text/html,' + encodeURIComponent(\`
+                <script>
+                  // This runs from data: origin, so it's cross-origin
+                  fetch(window.parent.location.origin + '${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get')
+                    .then(response => response.json())
+                    .then(data => {
+                      window.parent.postMessage({success: true, data: data}, '*');
+                    })
+                    .catch(error => {
+                      window.parent.postMessage({success: false, error: error.message}, '*');
+                    });
+                </script>
+              \`);
+              
+              // Listen for result
+              const handleMessage = (event) => {
+                if (event.data.success) {
+                  document.getElementById('cors-result').innerHTML = 
+                    'UNEXPECTED: Cross-origin request succeeded\\nThis indicates a security issue';
+                  document.getElementById('cors-result').className = 'result error';
+                } else {
+                  document.getElementById('cors-result').innerHTML = 
+                    'SUCCESS: CORS blocked the request\\nError: ' + event.data.error + 
+                    '\\nCheck console for full CORS error message';
+                  document.getElementById('cors-result').className = 'result success';
+                }
+                window.removeEventListener('message', handleMessage);
+                document.body.removeChild(iframe);
+              };
+              
+              window.addEventListener('message', handleMessage);
+              document.body.appendChild(iframe);
             }
           </script>
         </body>

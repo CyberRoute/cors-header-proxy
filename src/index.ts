@@ -239,34 +239,42 @@ async function testInvalid() {
 }
 
 function testCors() {
-  console.log('CORS Test: Your proxy correctly implements CORS security');
-  document.getElementById('cors-result').innerHTML = 'CORS Security Analysis:';
+  console.log('Testing CORS behavior with different origins...');
+  document.getElementById('cors-result').innerHTML = 'Testing CORS with different origins...';
   
-  // Explain what the curl tests show
-  const analysis = [
-    'Your CORS proxy is working correctly!',
-    '',
-    'Curl test results show proper behavior:',
-    '• Evil origin (https://evil-site.com): NO CORS headers',
-    '• Allowed origin (https://yourdomain.com): CORS headers present',
-    '',
-    'This means:',
-    '• Browsers will block unauthorized origins from reading responses',
-    '• Only whitelisted origins can access your proxy via JavaScript',
-    '• Server properly validates API targets (returns 403 for blocked APIs)',
-    '',
-    'The browser test failed because data: origins cannot access parent.location',
-    'This is actually another security feature working as intended!'
-  ].join(String.fromCharCode(10));
-  
-  document.getElementById('cors-result').innerHTML = analysis;
-  document.getElementById('cors-result').className = 'result success';
-  
-  // Log the explanation
-  console.log('CORS Security Summary:');
-  console.log('✅ Origin validation: Working (curl tests prove this)');
-  console.log('✅ API validation: Working (403 for unauthorized APIs)');
-  console.log('✅ Browser enforcement: Working (CORS headers control access)');
+  Promise.all([
+    fetch('/test-cors?origin=https://yourdomain.com'),
+    fetch('/test-cors?origin=https://evil-site.com')
+  ])
+  .then(responses => Promise.all(responses.map(r => r.json())))
+  .then(([allowedResult, blockedResult]) => {
+    const report = [
+      'CORS Test Results:',
+      '',
+      'Allowed Origin (https://yourdomain.com):',
+      '• CORS headers: ' + (allowedResult.corsHeaderPresent ? 'YES' : 'NO'),
+      '• Value: ' + allowedResult.corsHeaderValue,
+      '• Browser behavior: ' + allowedResult.demonstration,
+      '',
+      'Evil Origin (https://evil-site.com):',
+      '• CORS headers: ' + (blockedResult.corsHeaderPresent ? 'YES' : 'NO'), 
+      '• Value: ' + blockedResult.corsHeaderValue,
+      '• Browser behavior: ' + blockedResult.demonstration,
+      '',
+      'Security Status: ' + (allowedResult.corsHeaderPresent && !blockedResult.corsHeaderPresent ? 
+        'SECURE - Origins properly validated' : 
+        'ISSUE - Check CORS configuration')
+    ].join(String.fromCharCode(10));
+    
+    document.getElementById('cors-result').innerHTML = report;
+    document.getElementById('cors-result').className = 'result success';
+    
+    console.log('CORS test completed - check results above');
+  })
+  .catch(error => {
+    document.getElementById('cors-result').innerHTML = 'Test failed: ' + error.message;
+    document.getElementById('cors-result').className = 'result error';
+  });
 }
 </script>
 </body>
@@ -274,6 +282,35 @@ function testCors() {
     }
 
     const url = new URL(request.url);
+    
+    // Add test endpoint to simulate curl behavior
+    if (url.pathname === '/test-cors') {
+      const simulatedOrigin = url.searchParams.get('origin') || 'https://evil-site.com';
+      
+      // Make internal request to our own proxy with simulated origin
+      const testRequest = new Request(url.origin + '/corsproxy/?apiurl=https://httpbin.org/get', {
+        headers: {
+          'Origin': simulatedOrigin
+        }
+      });
+      
+      const response = await handleSecureRequest(testRequest);
+      const responseText = await response.text();
+      const corsHeader = response.headers.get('Access-Control-Allow-Origin');
+      
+      return new Response(JSON.stringify({
+        simulatedOrigin: simulatedOrigin,
+        corsHeaderPresent: !!corsHeader,
+        corsHeaderValue: corsHeader || 'None',
+        responseStatus: response.status,
+        demonstration: corsHeader ? 
+          'This origin would be allowed by browsers' : 
+          'This origin would be blocked by browsers (no CORS headers)'
+      }, null, 2), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     if (url.pathname.startsWith(PROXY_ENDPOINT)) {
       if (request.method === "OPTIONS") return handleOptions(request);
       if (["GET", "HEAD", "POST", "PUT", "DELETE"].includes(request.method)) {

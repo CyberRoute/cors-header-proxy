@@ -1,11 +1,14 @@
 export default {
   async fetch(request): Promise<Response> {
+    // SECURITY: Define allowed origins (no wildcards!)
     const ALLOWED_ORIGINS = [
       'https://yourdomain.com',
       'https://app.yourdomain.com',
       'https://staging.yourdomain.com',
+      // Add your legitimate domains here
     ];
 
+    // SECURITY: Define allowed target APIs (no open proxy!)
     const ALLOWED_APIS = [
       'https://httpbin.org',
       'https://api.example.com',
@@ -13,6 +16,7 @@ export default {
       // Only add APIs you trust and need to proxy
     ];
 
+    // SECURITY: Define rate limiting (optional but recommended)
     const RATE_LIMIT_PER_MINUTE = 60;
     
     const PROXY_ENDPOINT = "/corsproxy/";
@@ -418,7 +422,7 @@ export default {
               iframe.src = 'data:text/html,' + encodeURIComponent(\`
                 <script>
                   // This will create a real CORS error
-                  fetch('${window.location.origin}${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get')
+                  fetch(window.location.origin + '${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get')
                     .then(response => response.json())
                     .then(data => {
                       parent.postMessage({type: 'cors-success', data: data}, '*');

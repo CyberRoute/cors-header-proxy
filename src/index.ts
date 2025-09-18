@@ -285,7 +285,7 @@ export default {
                 const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get');
                 const data = await response.json();
                 document.getElementById('valid-result').innerHTML = 
-                  'SUCCESS: Request worked\\n' + JSON.stringify(data, null, 2);
+                  'SUCCESS: Request worked' + String.fromCharCode(10) + JSON.stringify(data, null, 2);
                 document.getElementById('valid-result').className = 'result success';
               } catch (error) {
                 document.getElementById('valid-result').innerHTML = 'ERROR: ' + error.message;
@@ -301,11 +301,11 @@ export default {
                 
                 if (response.status === 403) {
                   document.getElementById('invalid-result').innerHTML = 
-                    'SUCCESS: API correctly blocked\\n' + JSON.stringify(data, null, 2);
+                    'SUCCESS: API correctly blocked' + String.fromCharCode(10) + JSON.stringify(data, null, 2);
                   document.getElementById('invalid-result').className = 'result success';
                 } else {
                   document.getElementById('invalid-result').innerHTML = 
-                    'WARNING: API was not blocked!\\n' + JSON.stringify(data, null, 2);
+                    'WARNING: API was not blocked!' + String.fromCharCode(10) + JSON.stringify(data, null, 2);
                   document.getElementById('invalid-result').className = 'result error';
                 }
               } catch (error) {
@@ -339,12 +339,12 @@ export default {
               const handleMessage = (event) => {
                 if (event.data.success) {
                   document.getElementById('cors-result').innerHTML = 
-                    'UNEXPECTED: Cross-origin request succeeded\\nThis indicates a security issue';
+                    'UNEXPECTED: Cross-origin request succeeded' + String.fromCharCode(10) + 'This indicates a security issue';
                   document.getElementById('cors-result').className = 'result error';
                 } else {
                   document.getElementById('cors-result').innerHTML = 
-                    'SUCCESS: CORS blocked the request\\nError: ' + event.data.error + 
-                    '\\nCheck console for full CORS error message';
+                    'SUCCESS: CORS blocked the request' + String.fromCharCode(10) + 'Error: ' + event.data.error + 
+                    String.fromCharCode(10) + 'Check console for full CORS error message';
                   document.getElementById('cors-result').className = 'result success';
                 }
                 window.removeEventListener('message', handleMessage);

@@ -181,10 +181,101 @@ export default {
         </head>
         <body>
           <h1>CORS Proxy Demo</h1>
-          <div class="instruction"><strong>Open DevTools (F12) and watch the Console tab!</strong></div>
+          <div class="instruction">
+            <strong>Open Developer Tools (F12) and watch the Console tab to see CORS errors!</strong>
+          </div>
+
           <p><strong>Allowed Origins:</strong> ${ALLOWED_ORIGINS.join(', ')}</p>
           <p><strong>Allowed APIs:</strong> ${ALLOWED_APIS.join(', ')}</p>
-          <!-- your full test buttons and JS go here (unchanged) -->
+
+          <div class="test-section">
+            <h3>Test 1: Valid Request (Should Work)</h3>
+            <button onclick="testValid()">Test Valid API Request</button>
+            <div id="valid-result" class="result">Click to test allowed API</div>
+          </div>
+
+          <div class="test-section">
+            <h3>Test 2: Invalid API (Should Return 403)</h3>
+            <button class="error-button" onclick="testInvalid()">Test Blocked API Request</button>
+            <div id="invalid-result" class="result">Click to test blocked API</div>
+          </div>
+
+          <div class="test-section">
+            <h3>Test 3: Cross-Origin CORS Test (Should Show CORS Error)</h3>
+            <p>This creates a real cross-origin request that will be blocked by CORS:</p>
+            <button class="error-button" onclick="testCors()">Test CORS Blocking</button>
+            <div id="cors-result" class="result">Click to trigger actual CORS error in console</div>
+          </div>
+
+          <script>
+            async function testValid() {
+              try {
+                document.getElementById('valid-result').innerHTML = 'Testing...';
+                const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get');
+                const data = await response.json();
+                document.getElementById('valid-result').innerHTML = 
+                  'SUCCESS: Request worked\\n' + JSON.stringify(data, null, 2);
+                document.getElementById('valid-result').className = 'result success';
+              } catch (error) {
+                document.getElementById('valid-result').innerHTML = 'ERROR: ' + error.message;
+                document.getElementById('valid-result').className = 'result error';
+              }
+            }
+
+            async function testInvalid() {
+              try {
+                document.getElementById('invalid-result').innerHTML = 'Testing...';
+                const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://blocked-api.com/data');
+                const data = await response.json();
+                if (response.status === 403) {
+                  document.getElementById('invalid-result').innerHTML = 
+                    'SUCCESS: API correctly blocked\\n' + JSON.stringify(data, null, 2);
+                  document.getElementById('invalid-result').className = 'result success';
+                } else {
+                  document.getElementById('invalid-result').innerHTML = 
+                    'WARNING: API was not blocked!\\n' + JSON.stringify(data, null, 2);
+                  document.getElementById('invalid-result').className = 'result error';
+                }
+              } catch (error) {
+                document.getElementById('invalid-result').innerHTML = 'ERROR: ' + error.message;
+                document.getElementById('invalid-result').className = 'result error';
+              }
+            }
+
+            function testCors() {
+              console.log('Creating cross-origin request that will trigger CORS error...');
+              document.getElementById('cors-result').innerHTML = 'Creating cross-origin test...';
+              const iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              const iframeContent = '<script>' +
+                'fetch(window.parent.location.origin + "${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get")' +
+                  '.then(response => response.json())' +
+                  '.then(data => {' +
+                    'window.parent.postMessage({success: true, data: data}, "*");' +
+                  '})' +
+                  '.catch(error => {' +
+                    'window.parent.postMessage({success: false, error: error.message}, "*");' +
+                  '});' +
+                '</' + 'script>';
+              iframe.src = 'data:text/html,' + encodeURIComponent(iframeContent);
+              const handleMessage = (event) => {
+                if (event.data.success) {
+                  document.getElementById('cors-result').innerHTML = 
+                    'UNEXPECTED: Cross-origin request succeeded\\nThis indicates a security issue';
+                  document.getElementById('cors-result').className = 'result error';
+                } else {
+                  document.getElementById('cors-result').innerHTML = 
+                    'SUCCESS: CORS blocked the request\\nError: ' + event.data.error + 
+                    '\\nCheck console for full CORS error message';
+                  document.getElementById('cors-result').className = 'result success';
+                }
+                window.removeEventListener('message', handleMessage);
+                document.body.removeChild(iframe);
+              };
+              window.addEventListener('message', handleMessage);
+              document.body.appendChild(iframe);
+            }
+          </script>
         </body>
         </html>
       `;

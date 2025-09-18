@@ -321,19 +321,19 @@ export default {
               // Create iframe with data: URL (different origin)
               const iframe = document.createElement('iframe');
               iframe.style.display = 'none';
-              iframe.src = 'data:text/html,' + encodeURIComponent(\`
-                <script>
-                  // This runs from data: origin, so it's cross-origin
-                  fetch(window.parent.location.origin + '${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get')
-                    .then(response => response.json())
-                    .then(data => {
-                      window.parent.postMessage({success: true, data: data}, '*');
-                    })
-                    .catch(error => {
-                      window.parent.postMessage({success: false, error: error.message}, '*');
-                    });
-                </script>
-              \`);
+              
+              const iframeContent = '<script>' +
+                'fetch(window.parent.location.origin + "${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get")' +
+                  '.then(response => response.json())' +
+                  '.then(data => {' +
+                    'window.parent.postMessage({success: true, data: data}, "*");' +
+                  '})' +
+                  '.catch(error => {' +
+                    'window.parent.postMessage({success: false, error: error.message}, "*");' +
+                  '});' +
+                '</script>';
+              
+              iframe.src = 'data:text/html,' + encodeURIComponent(iframeContent);
               
               // Listen for result
               const handleMessage = (event) => {

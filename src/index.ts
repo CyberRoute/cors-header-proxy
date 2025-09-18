@@ -231,315 +231,81 @@ export default {
       }
     }
 
-    // Demo page with CORS error demonstrations
+    // Demo page with simple CORS demonstrations
     function getSecureDemoPage() {
       return `
         <!DOCTYPE html>
         <html>
         <head>
-          <title>CORS Proxy - Live Browser Demonstration</title>
+          <title>CORS Proxy Demo</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             .instruction { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
-            .security-notice { background: #e8f5e8; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }
             .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-            .cors-demo { background: #ffebee; border: 1px solid #ffcdd2; padding: 15px; border-radius: 5px; margin: 10px 0; }
-            button { margin: 5px; padding: 8px 15px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+            button { margin: 5px; padding: 10px 20px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
             .error-button { background: #dc3545; }
-            .success-button { background: #28a745; }
             .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; min-height: 20px; font-family: monospace; font-size: 12px; }
-            .error { border-left: 4px solid #f44336; background: #ffebee; }
             .success { border-left: 4px solid #4CAF50; background: #e8f5e8; }
-            .warning { border-left: 4px solid #ff9800; background: #fff8e1; }
-            .highlight { background: #ffeb3b; padding: 2px 4px; border-radius: 2px; }
-            pre { white-space: pre-wrap; word-wrap: break-word; }
-            .console-tip { background: #1e1e1e; color: #00ff00; padding: 10px; border-radius: 5px; font-family: monospace; margin: 10px 0; }
+            .error { border-left: 4px solid #f44336; background: #ffebee; }
           </style>
         </head>
         <body>
-          <h1>🔒 CORS Proxy - Live Browser Demonstration</h1>
+          <h1>CORS Proxy Demo</h1>
           
           <div class="instruction">
-            <strong>📋 IMPORTANT: Open Developer Tools!</strong><br>
-            Press <kbd>F12</kbd> or right-click → "Inspect" → "Console" tab.<br>
-            Watch for <span class="highlight">CORS errors</span> when unauthorized requests are blocked by the browser.
+            <strong>Open Developer Tools (F12) and watch the Console tab to see CORS errors!</strong>
           </div>
 
-          <div class="security-notice">
-            <h3>🛡️ Current Security Configuration:</h3>
-            <p><strong>This page origin:</strong> <code id="current-origin"></code></p>
-            <p><strong>Proxy URL:</strong> <code>${PROXY_ENDPOINT}</code></p>
-            <p><strong>Allowed Origins:</strong> ${ALLOWED_ORIGINS.map(origin => `<code>${origin}</code>`).join(', ')}</p>
-            <p><strong>Allowed APIs:</strong> ${ALLOWED_APIS.map(api => `<code>${api}</code>`).join(', ')}</p>
+          <p><strong>Allowed Origins:</strong> ${ALLOWED_ORIGINS.join(', ')}</p>
+          <p><strong>Allowed APIs:</strong> ${ALLOWED_APIS.join(', ')}</p>
+
+          <div class="test-section">
+            <h3>Test 1: Valid Request (Should Work)</h3>
+            <button onclick="testValid()">Test Valid API Request</button>
+            <div id="valid-result" class="result">Click to test allowed API</div>
           </div>
 
           <div class="test-section">
-            <h2>✅ 1. Same-Origin Request (Should Work)</h2>
-            <p>This request comes from the same origin, so no CORS headers are needed.</p>
-            <button class="success-button" onclick="testSameOrigin()">Test Same-Origin Request</button>
-            <div id="same-origin-result" class="result">Click to test same-origin request</div>
-          </div>
-
-          <div class="test-section">
-            <h2>❌ 2. Unauthorized API Target (Should Fail with 403)</h2>
-            <p>Server rejects requests to non-whitelisted APIs regardless of origin.</p>
-            <button class="error-button" onclick="testUnauthorizedApi()">Test Unauthorized API</button>
-            <div id="unauthorized-api-result" class="result">Click to test request to blocked API</div>
-          </div>
-
-          <div class="cors-demo">
-            <h2>🚫 3. CORS Blocking Demonstration</h2>
-            <p>These tests simulate cross-origin requests to show how CORS works:</p>
-            
-            <div style="margin: 15px 0;">
-              <h3>Scenario A: Authorized Origin (Simulated)</h3>
-              <p>Simulate a request from <code>https://yourdomain.com</code> - should work</p>
-              <button class="success-button" onclick="testAuthorizedOriginSimulated()">Simulate Authorized Origin</button>
-              <div id="auth-origin-result" class="result">Click to simulate authorized cross-origin request</div>
-            </div>
-
-            <div style="margin: 15px 0;">
-              <h3>Scenario B: Unauthorized Origin (Real CORS Error!)</h3>
-              <p><strong>⚠️ Watch Console!</strong> This will create a real CORS error that you can see in DevTools</p>
-              <button class="error-button" onclick="testRealCorsError()">Trigger Real CORS Error</button>
-              <div id="cors-error-result" class="result">Click to see browser block a cross-origin request</div>
-            </div>
-
-            <div style="margin: 15px 0;">
-              <h3>Scenario C: CORS Preflight Test</h3>
-              <p>Test preflight request behavior with unauthorized origin</p>
-              <button class="error-button" onclick="testPreflightCors()">Test CORS Preflight Blocking</button>
-              <div id="preflight-result" class="result">Click to test preflight request blocking</div>
-            </div>
-          </div>
-
-          <div class="console-tip">
-            💡 Expected Console Messages:<br>
-            ✅ Authorized: No errors, request succeeds<br>
-            ❌ Unauthorized: "Access to fetch at '...' from origin '...' has been blocked by CORS policy"
-          </div>
-
-          <div class="test-section">
-            <h2>📊 4. Security Validation Summary</h2>
-            <button onclick="runAllTests()">Run All Security Tests</button>
-            <div id="summary-result" class="result">Click to run comprehensive security validation</div>
+            <h3>Test 2: Invalid API (Should Return 403)</h3>
+            <button class="error-button" onclick="testInvalid()">Test Blocked API Request</button>
+            <div id="invalid-result" class="result">Click to test blocked API</div>
           </div>
 
           <script>
-            // Show current origin
-            document.getElementById('current-origin').textContent = window.location.origin;
-
-            function log(message, type = 'info') {
-              console.log('%c[CORS Demo] ' + message, 
-                type === 'error' ? 'color: red; font-weight: bold;' :
-                type === 'success' ? 'color: green; font-weight: bold;' :
-                'color: blue;'
-              );
-            }
-
-            function updateResult(elementId, content, className = 'success') {
-              const element = document.getElementById(elementId);
-              element.innerHTML = content;
-              element.className = 'result ' + className;
-            }
-
-            async function testSameOrigin() {
+            async function testValid() {
               try {
-                log('Testing same-origin request to proxy...');
-                updateResult('same-origin-result', 'Making same-origin request...', 'warning');
-                
+                document.getElementById('valid-result').innerHTML = 'Testing...';
                 const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get');
                 const data = await response.json();
-                
-                log('Same-origin request succeeded', 'success');
-                updateResult('same-origin-result', 
-                  '✅ SUCCESS: Same-origin request worked\\n' + 
-                  JSON.stringify(data, null, 2), 'success');
+                document.getElementById('valid-result').innerHTML = 
+                  'SUCCESS: Request worked\\n' + JSON.stringify(data, null, 2);
+                document.getElementById('valid-result').className = 'result success';
               } catch (error) {
-                log('Same-origin request failed: ' + error.message, 'error');
-                updateResult('same-origin-result', 
-                  '❌ UNEXPECTED: Same-origin request failed: ' + error.message, 'error');
+                document.getElementById('valid-result').innerHTML = 'ERROR: ' + error.message;
+                document.getElementById('valid-result').className = 'result error';
               }
             }
 
-            async function testUnauthorizedApi() {
+            async function testInvalid() {
               try {
-                log('Testing request to unauthorized API...');
-                updateResult('unauthorized-api-result', 'Testing unauthorized API...', 'warning');
-                
-                const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://malicious-api.com/steal-data');
+                document.getElementById('invalid-result').innerHTML = 'Testing...';
+                const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://blocked-api.com/data');
                 const data = await response.json();
                 
                 if (response.status === 403) {
-                  log('Unauthorized API correctly blocked with 403', 'success');
-                  updateResult('unauthorized-api-result', 
-                    '✅ SECURITY WORKING: API blocked with 403\\n' + 
-                    JSON.stringify(data, null, 2), 'success');
+                  document.getElementById('invalid-result').innerHTML = 
+                    'SUCCESS: API correctly blocked\\n' + JSON.stringify(data, null, 2);
+                  document.getElementById('invalid-result').className = 'result success';
                 } else {
-                  log('WARNING: Unauthorized API was not blocked!', 'error');
-                  updateResult('unauthorized-api-result', 
-                    '⚠️ SECURITY ISSUE: Unauthorized API allowed!\\n' + 
-                    JSON.stringify(data, null, 2), 'error');
+                  document.getElementById('invalid-result').innerHTML = 
+                    'WARNING: API was not blocked!\\n' + JSON.stringify(data, null, 2);
+                  document.getElementById('invalid-result').className = 'result error';
                 }
               } catch (error) {
-                log('Request to unauthorized API failed: ' + error.message, 'error');
-                updateResult('unauthorized-api-result', 
-                  '❌ REQUEST FAILED: ' + error.message, 'error');
+                document.getElementById('invalid-result').innerHTML = 'ERROR: ' + error.message;
+                document.getElementById('invalid-result').className = 'result error';
               }
             }
-
-            async function testAuthorizedOriginSimulated() {
-              try {
-                log('Simulating authorized origin request...');
-                updateResult('auth-origin-result', 'Simulating authorized origin...', 'warning');
-                
-                // This simulates what would happen from an authorized origin
-                // by making a same-origin request (which doesn't need CORS headers)
-                const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get');
-                const data = await response.json();
-                
-                log('Authorized origin simulation: Request succeeded', 'success');
-                updateResult('auth-origin-result', 
-                  '✅ SIMULATION: This shows what authorized origins experience\\n' +
-                  '(No CORS errors because request succeeds)\\n' + 
-                  JSON.stringify(data, null, 2), 'success');
-              } catch (error) {
-                log('Authorized origin simulation failed: ' + error.message, 'error');
-                updateResult('auth-origin-result', 
-                  '❌ SIMULATION FAILED: ' + error.message, 'error');
-              }
-            }
-
-            async function testRealCorsError() {
-              log('🚨 Creating real CORS error - WATCH THE CONSOLE! 🚨', 'error');
-              updateResult('cors-error-result', '⏳ Creating iframe to simulate cross-origin request...', 'warning');
-              
-              // Create an iframe with a different origin to demonstrate CORS
-              const iframe = document.createElement('iframe');
-              iframe.style.display = 'none';
-              
-              // Use data: URL to create different origin
-              iframe.src = 'data:text/html,' + encodeURIComponent(\`
-                <script>
-                  // This will create a real CORS error
-                  fetch(window.location.origin + '${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get')
-                    .then(response => response.json())
-                    .then(data => {
-                      parent.postMessage({type: 'cors-success', data: data}, '*');
-                    })
-                    .catch(error => {
-                      parent.postMessage({type: 'cors-error', error: error.message}, '*');
-                    });
-                </script>
-              \`);
-              
-              // Listen for messages from iframe
-              const messageHandler = (event) => {
-                if (event.data.type === 'cors-error') {
-                  log('🎯 CORS ERROR CAUGHT: ' + event.data.error, 'error');
-                  updateResult('cors-error-result', 
-                    '🎯 SUCCESS: Browser blocked cross-origin request!\\n' +
-                    '❌ CORS Error: ' + event.data.error + '\\n\\n' +
-                    '✅ This proves CORS is working - unauthorized origins cannot access the API', 'success');
-                } else if (event.data.type === 'cors-success') {
-                  log('⚠️ UNEXPECTED: Cross-origin request succeeded', 'error');
-                  updateResult('cors-error-result', 
-                    '⚠️ UNEXPECTED: Request succeeded from different origin\\n' +
-                    'This might indicate a security issue', 'error');
-                }
-                window.removeEventListener('message', messageHandler);
-                document.body.removeChild(iframe);
-              };
-              
-              window.addEventListener('message', messageHandler);
-              document.body.appendChild(iframe);
-              
-              // Fallback timeout
-              setTimeout(() => {
-                updateResult('cors-error-result', 
-                  '⏰ Timeout: Check browser console for CORS errors', 'warning');
-                if (document.body.contains(iframe)) {
-                  document.body.removeChild(iframe);
-                }
-                window.removeEventListener('message', messageHandler);
-              }, 5000);
-            }
-
-            async function testPreflightCors() {
-              try {
-                log('Testing CORS preflight behavior...');
-                updateResult('preflight-result', 'Testing CORS preflight...', 'warning');
-                
-                // Make a request that requires preflight (custom headers)
-                const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://httpbin.org/post', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'X-Custom-Header': 'test-value' // This triggers preflight
-                  },
-                  body: JSON.stringify({test: 'preflight'})
-                });
-                
-                const data = await response.json();
-                log('Preflight request succeeded', 'success');
-                updateResult('preflight-result', 
-                  '✅ PREFLIGHT SUCCESS: Complex request allowed\\n' + 
-                  JSON.stringify(data, null, 2), 'success');
-                  
-              } catch (error) {
-                if (error.message.includes('CORS')) {
-                  log('CORS preflight blocked: ' + error.message, 'success');
-                  updateResult('preflight-result', 
-                    '✅ CORS WORKING: Preflight blocked unauthorized request\\n' +
-                    '❌ Error: ' + error.message, 'success');
-                } else {
-                  log('Preflight test failed: ' + error.message, 'error');
-                  updateResult('preflight-result', 
-                    '❌ TEST FAILED: ' + error.message, 'error');
-                }
-              }
-            }
-
-            async function runAllTests() {
-              updateResult('summary-result', '🔄 Running all security tests...', 'warning');
-              log('Starting comprehensive security test suite...');
-              
-              const results = [];
-              
-              // Test 1: Same origin (should work)
-              try {
-                const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://httpbin.org/get');
-                results.push(response.ok ? '✅ Same-origin: PASS' : '❌ Same-origin: FAIL');
-              } catch (e) {
-                results.push('❌ Same-origin: ERROR - ' + e.message);
-              }
-              
-              // Test 2: Unauthorized API (should return 403)
-              try {
-                const response = await fetch('${PROXY_ENDPOINT}?apiurl=https://unauthorized-api.com/data');
-                results.push(response.status === 403 ? '✅ API blocking: PASS' : '❌ API blocking: FAIL');
-              } catch (e) {
-                results.push('⚠️ API blocking: ERROR - ' + e.message);
-              }
-              
-              // Test 3: Invalid URL (should return 400)
-              try {
-                const response = await fetch('${PROXY_ENDPOINT}?apiurl=invalid-url');
-                results.push(response.status === 400 ? '✅ URL validation: PASS' : '❌ URL validation: FAIL');
-              } catch (e) {
-                results.push('⚠️ URL validation: ERROR - ' + e.message);
-              }
-              
-              const summary = results.join('\\n');
-              log('Security test summary:\\n' + summary);
-              updateResult('summary-result', 
-                '📊 SECURITY TEST RESULTS:\\n\\n' + summary + 
-                '\\n\\n🔍 Check browser console for detailed CORS error messages', 'success');
-            }
-
-            // Log initial setup
-            log('CORS Proxy Demo loaded. Current origin: ' + window.location.origin);
-            log('Open DevTools Console to see CORS errors when they occur!');
           </script>
         </body>
         </html>

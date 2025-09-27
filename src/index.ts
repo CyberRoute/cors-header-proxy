@@ -200,10 +200,19 @@ button { margin: 5px; padding: 10px 20px; background: #007cba; color: white; bor
 </div>
 
 <div class="test-section">
-<h3>Test 3: Cross-Origin CORS Test (Should Show CORS Error)</h3>
-<p>This creates a real cross-origin request that will be blocked by CORS:</p>
-<button class="error-button" onclick="testCors()">Test CORS Blocking</button>
-<div id="cors-result" class="result">Click to trigger actual CORS error in console</div>
+<h3>Test 3: Real CORS Error (Browser Console)</h3>
+<p><strong>To see actual CORS blocking:</strong></p>
+<ol>
+<li>Go to any other website (google.com, github.com, etc.)</li>
+<li>Open Developer Tools (F12) → Console tab</li>
+<li>Paste this code:</li>
+</ol>
+<div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px; overflow-x: auto;">
+fetch('${location.origin}/corsproxy/?apiurl=https://httpbin.org/get').catch(console.error)
+</div>
+<p>You'll see: <em>"Access to fetch... has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present"</em></p>
+<button onclick="copyConsoleCode()">📋 Copy Console Code</button>
+<div id="cors-result" class="result">Click to copy the console test code</div>
 </div>
 
 <script>
@@ -238,60 +247,24 @@ async function testInvalid() {
   }
 }
 
-function testCors() {
-  console.log('Testing actual CORS blocking behavior...');
-  document.getElementById('cors-result').innerHTML = 'Testing CORS with different origins...';
-  
-  // Instead of trying to create cross-origin requests (which browsers prevent),
-  // let's demonstrate the curl behavior by calling our test endpoint
-  Promise.all([
-    fetch('/test-cors?origin=https://yourdomain.com'),
-    fetch('/test-cors?origin=https://evil-site.com'),
-    // Test what happens with no origin (same-origin)
-    fetch('/corsproxy/?apiurl=https://httpbin.org/get')
-  ])
-  .then(async ([allowedTest, blockedTest, sameOriginTest]) => {
-    const allowedResult = await allowedTest.json();
-    const blockedResult = await blockedTest.json();
-    const sameOriginHeaders = Object.fromEntries([...sameOriginTest.headers.entries()]);
-    
-    const report = [
-      'CORS Header Analysis:',
-      '',
-      '1. Allowed Origin Test (https://yourdomain.com):',
-      '   CORS Headers: ' + (allowedResult.corsHeaderPresent ? 'YES ✓' : 'NO ✗'),
-      '   Value: ' + allowedResult.corsHeaderValue,
-      '',
-      '2. Blocked Origin Test (https://evil-site.com):',
-      '   CORS Headers: ' + (blockedResult.corsHeaderPresent ? 'YES ✗' : 'NO ✓'),
-      '   Value: ' + blockedResult.corsHeaderValue,
-      '',
-      '3. Same-Origin Test (this browser):',
-      '   CORS Headers: ' + (sameOriginHeaders['access-control-allow-origin'] ? 'YES' : 'NO'),
-      '   Status: Works because it\\'s same-origin',
-      '',
-      'Security Analysis:',
-      allowedResult.corsHeaderPresent && !blockedResult.corsHeaderPresent ?
-        '✓ SECURE: Only authorized origins get CORS headers' :
-        '✗ ISSUE: CORS configuration problem',
-      '',
-      'This matches your curl results:',
-      '• curl with evil-site.com: No CORS headers',
-      '• curl with yourdomain.com: CORS headers present',
-      '• Browser same-origin: Works without CORS headers needed'
-    ].join(String.fromCharCode(10));
-    
-    document.getElementById('cors-result').innerHTML = report;
-    document.getElementById('cors-result').className = 'result success';
-    
-    console.log('CORS test results:');
-    console.log('Allowed origin CORS headers:', allowedResult.corsHeaderPresent);
-    console.log('Blocked origin CORS headers:', blockedResult.corsHeaderPresent);
-  })
-  .catch(error => {
-    document.getElementById('cors-result').innerHTML = 'Test failed: ' + error.message;
-    document.getElementById('cors-result').className = 'result error';
-  });
+function copyConsoleCode() {
+  const code = "fetch('" + location.origin + "/corsproxy/?apiurl=https://httpbin.org/get').catch(console.error)";
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(code).then(() => {
+      document.getElementById('cors-result').innerHTML = '✅ Code copied to clipboard!\\n\\nNow:\\n1. Go to any other website\\n2. Open DevTools (F12)\\n3. Paste in Console tab\\n4. See the CORS error!';
+      document.getElementById('cors-result').className = 'result success';
+    }).catch(() => {
+      showCodeManually(code);
+    });
+  } else {
+    showCodeManually(code);
+  }
+}
+
+function showCodeManually(code) {
+  document.getElementById('cors-result').innerHTML = 'Copy this code manually:\\n\\n' + code + '\\n\\nThen:\\n1. Go to any other website\\n2. Open DevTools (F12)\\n3. Paste in Console tab\\n4. See the CORS error!';
+  document.getElementById('cors-result').className = 'result success';
 }
 </script>
 </body>

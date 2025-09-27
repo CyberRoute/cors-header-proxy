@@ -208,7 +208,7 @@ button { margin: 5px; padding: 10px 20px; background: #007cba; color: white; bor
 <li>Paste this code:</li>
 </ol>
 <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px; overflow-x: auto;">
-fetch('${location.origin}/corsproxy/?apiurl=https://httpbin.org/get').catch(console.error)
+fetch('" + location.origin + "/corsproxy/?apiurl=https://httpbin.org/get').catch(console.error)
 </div>
 <p>You'll see: <em>"Access to fetch... has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present"</em></p>
 <button onclick="copyConsoleCode()">📋 Copy Console Code</button>
